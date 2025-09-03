@@ -46,7 +46,7 @@ export async function getUserProfile(
   body.receivedHTTPRequestBody = (await req.text()) || "";
 
   // Prepare access token.
-  const accessToken: string = req.headers.get("Authorization")?.replace("Bearer ", "").trim();
+  const accessToken: string = req.headers.get("Authorization")?.replace("Bearer ", "").trim() ?? "";
   if (!accessToken) {
     return {
       status: 400,

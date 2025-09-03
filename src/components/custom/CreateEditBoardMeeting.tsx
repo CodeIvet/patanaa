@@ -164,6 +164,7 @@ export function CreateEditBoardMeeting(props: {
         const [groupsResponse, roomsResponse] = await Promise.all([
           callBackend("getDefaultParticipantGroups", "GET", teamsUserCredential),
           callBackend("getDefaultRooms", "GET", teamsUserCredential),
+          callBackend("getBoardMeetings", "GET", teamsUserCredential), // added getBoardMeetings
         ]);
 
         const groupsData = JSON.parse(groupsResponse);
@@ -237,6 +238,9 @@ export function CreateEditBoardMeeting(props: {
     const progressSteps = 2;
     const progressIncrement = 1 / progressSteps;
 
+
+  
+
     // Create Board Meeting in Database
     progressInfo = "Fenster bitte nicht schließen! Speichere Sitzung...";
     savingProgressPercent.current = progressIncrement;
@@ -248,7 +252,7 @@ export function CreateEditBoardMeeting(props: {
       });
 
       const newBoardMeeting: BoardMeeting = {
-        id: props.currentMeetingItem?.id ?? 123456789,
+        id: props.currentMeetingItem?.id ?? 0,
         startTime: startTimeInTimeZone ? startTimeInTimeZone : DateTime.now(),
         title: title,
         fixedParticipants: selectedParticipants,

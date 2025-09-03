@@ -16,7 +16,7 @@ async function callFunction(teamsUserCredential: TeamsUserCredential) {
       apiBaseUrl,
       new BearerTokenAuthProvider(async () => (await teamsUserCredential.getToken(""))!.token)
     );
-    const response = await apiClient.get(functionName);
+    const response = await apiClient.post(functionName);
     return response.data;
   } catch (err: unknown) {
     if (axios.default.isAxiosError(err)) {

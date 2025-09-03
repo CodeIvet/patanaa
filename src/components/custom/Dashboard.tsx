@@ -394,56 +394,65 @@ export function Dashboard(props: { showFunction?: boolean; environment?: string 
     (column) => column.columnId !== "remarks"
   );
 
+  
   const fetchBoardMeetings = async () => {
-    setIsLoading(true);
-    try {
-      const boardmeetings = await helper.callBackend(
-        "getBoardMeetings",
-        "GET",
-        teamsUserCredential,
-        undefined,
-        undefined
-      );
-      setRawBoardMeetings(JSON.parse(boardmeetings));
-    } catch (error) {
-      setError(JSON.stringify(error));
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  try {
+    const boardmeetings = await helper.callBackend(
+      "getBoardMeetings",
+      "GET",
+      teamsUserCredential,
+      undefined,
+      undefined
+    );
+
+    // Safely parse the response
+    const data =
+      typeof boardmeetings === "string" ? JSON.parse(boardmeetings) : boardmeetings;
+    setRawBoardMeetings(data);
+  } catch (error) {
+    console.error("Error fetching board meetings:", error);
+    setError(JSON.stringify(error));
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Fetch once on mount and when reload is requested
+useEffect(() => {
+  const fetchData = async () => {
+    await fetchBoardMeetings();
+
+    // Reset reload flag if it was set
+    if (shouldReloadBoardMeetings) {
+      setShouldReloadBoardMeetings(false);
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchBoardMeetings(); // Await the call inside the async function
-      if (shouldReloadBoardMeetings) {
-        setShouldReloadBoardMeetings(false);
-      }
-    };
+  fetchData();
+}, [shouldReloadBoardMeetings]);
 
-    fetchData(); // Invoke the async function
-  }, [shouldReloadBoardMeetings]);
+// Transform rawBoardMeetings into BoardMeeting objects
+useEffect(() => {
+  if (!rawBoardMeetings || rawBoardMeetings.length === 0) return;
 
-  useEffect(() => {
-    if (rawBoardMeetings) {
-      // Transform the JSON data to an array of BoardMeeting objects
-      const transformedData: helper.BoardMeeting[] = rawBoardMeetings.map(
-        (item: any) => ({
-          id: item.ID.toString(), // Convert ID to string
-          startTime: DateTime.fromISO(item.StartTime, { zone: item.TimeZone }), // Convert StartTime to DateTime
-          title: item.Title, // Map Title directly
-          fixedParticipants: item.FixedParticipants, // Map FixedParticipants directly
-          remarks: item.Remarks, // Map Remarks directly
-          location: item.Location, // Map Location directly
-          meetingLink: item.MeetingLink, // Map MeetingLink directly
-          fileLocationId: item.FileLocationId, // Map FileLocationId directly
-          eventId: item.EventId, // Map EventId directly
-          timeZone: item.TimeZone, // Map TimeZone directly
-          room: item.Room, // Map Room directly
-        })
-      );
-      setBoardMeetings(transformedData);
-    }
-  }, [rawBoardMeetings]);
+  const transformedData: helper.BoardMeeting[] = rawBoardMeetings.map((item: any) => ({
+    id: item.ID?.toString() ?? "", // Convert ID to string safely
+    startTime: DateTime.fromISO(item.StartTime, { zone: item.TimeZone || "UTC" }),
+    title: item.Title || "",
+    fixedParticipants: item.FixedParticipants || "",
+    remarks: item.Remarks || "",
+    location: item.Location || "",
+    meetingLink: item.MeetingLink,
+    fileLocationId: item.FileLocationId,
+    eventId: item.EventId,
+    timeZone: item.TimeZone || "UTC",
+    room: item.Room,
+  }));
+
+  setBoardMeetings(transformedData);
+}, [rawBoardMeetings]);
+
 
   return (
     <div className="page-padding">

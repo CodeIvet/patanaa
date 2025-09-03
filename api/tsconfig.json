@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
+    "target": "ES2021",
+    "lib": ["ES2021"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "strict": true,
     "outDir": "dist",
     "rootDir": ".",
     "sourceMap": true,
-    "strict": false,
     "typeRoots": ["./node_modules/@types"]
   }
 }

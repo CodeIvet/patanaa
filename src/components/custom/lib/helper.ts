@@ -4,6 +4,7 @@ import { Method } from "axios";
 import { defaultDatePickerStrings } from "@fluentui/react-datepicker-compat";
 import type { CalendarStrings } from "@fluentui/react-datepicker-compat";
 import { DateTime } from "luxon";
+import config from "./config"; // adjust path if needed
 
 export type BoardMeeting = {
   id: number;
@@ -73,7 +74,7 @@ export async function callBackend(
 
     // const cred = teamsfx.getCredential();
     const token = await teamsUserCredential.getToken(""); // Get SSO token for the user
-    const apiEndpoint = process.env.REACT_APP_FUNC_ENDPOINT;
+    const apiEndpoint = config.apiEndpoint; // ✅ comes from import.meta.env
     const response = await axios.default.request({
       url: apiEndpoint + "/api/" + functionName + query,
       method: method,

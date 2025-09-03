@@ -3,7 +3,11 @@
     "Values": {
       "FUNCTIONS_WORKER_RUNTIME": "node",
       "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
-      "AzureWebJobsStorage": "UseDevelopmentStorage=true"
+      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+      "DB_USER": "patanaadmin",
+      "DB_PASSWORD": "Automating-colla!",
+      "DB_SERVER": "patana-sqlserver.database.windows.net",
+      "DB_NAME": "patana-dev"
     },
     "Host": {
         "CORS": "*"

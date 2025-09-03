@@ -408,7 +408,7 @@ export function Dashboard(props: { showFunction?: boolean; environment?: string 
 
     // Safely parse the response
     const data =
-      typeof boardmeetings === "string" ? JSON.parse(boardmeetings) : boardmeetings;
+      typeof boardmeetings === "string" ? JSON.parse(boardmeetings) : boardmeetings; // checks if "boardmeetings" is a string, if yes parses JSON.parse, if not assigns it directly
     setRawBoardMeetings(data);
   } catch (error) {
     console.error("Error fetching board meetings:", error);

@@ -16,7 +16,7 @@ import React, { useContext } from "react";
 import { useState } from "react";
 import { BoardMeeting, callBackend } from "./lib/helper";
 
-//import renameFileImage from "./lib/rename_file.png";
+//import renameFileImage from "./lib/rename_file.png"; // for screenshot
 import { TeamsFxContext } from "../Context";
 
 const useStyles = makeStyles({

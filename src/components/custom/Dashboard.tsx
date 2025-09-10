@@ -594,11 +594,11 @@ useEffect(() => {
             </DialogTitle>
             <DialogContent>
               <ManageAgenda
-                //isSmallScreen={isSmallScreen}
-                //setOpenDialogManageAgenda={setOpenDialogManageAgenda}
-                //currentMeetingItem={currentMeetingItem}
-                //setShouldReloadBoardMeetings={setShouldReloadBoardMeetings}
-                //setPreventDialogClose={setPreventDialogClose}
+                isSmallScreen={isSmallScreen}
+                setOpenDialogManageAgenda={setOpenDialogManageAgenda}
+                currentMeetingItem={currentMeetingItem}
+                setShouldReloadBoardMeetings={setShouldReloadBoardMeetings}
+                setPreventDialogClose={setPreventDialogClose}
               />
             </DialogContent>
           </DialogBody>

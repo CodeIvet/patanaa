@@ -12,6 +12,7 @@ import config from "./config";
 import DatabaseHelper from "./DatabaseHelper";
 import { format } from "path";
 
+
 export function createGraphClient(type: "App" | "User", accessToken?: string): Client {
   const credential = createTeamsFxCredential(type, accessToken);
   const authProvider = new TokenCredentialAuthenticationProvider(credential, {
@@ -92,15 +93,21 @@ export async function createLinkFile(
   }
 }
 
-function formatDateForFolder(date: DateTime, includeTime: boolean = false) {
-  const datePart = date.toFormat("yyyy-MM-dd"); // Formats as YYYY-MM-DD
+//rewritten to handle stringdates as well
+export function formatDateForFolder(dateOrString: DateTime | string | null, includeTime = false) {
+  if (!dateOrString) return "unknown-date"; // fallback
 
-  if (includeTime) {
-    const timePart = date.toFormat("HHmm"); // Formats as HHmm (24-hour format, no colon)
-    return `${datePart}_${timePart}`;
-  } else {
-    return datePart;
+  const dt = typeof dateOrString === "string"
+    ? DateTime.fromISO(dateOrString, { setZone: true })
+    : dateOrString;
+
+  if (!dt.isValid) {
+    console.warn("Invalid date passed to formatDateForFolder:", dateOrString);
+    return "invalid-date";
   }
+
+  const datePart = dt.toFormat("yyyy-MM-dd");
+  return includeTime ? `${datePart}_${dt.toFormat("HHmm")}` : datePart;
 }
 
 export const calculateTimestamps = (

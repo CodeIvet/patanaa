@@ -7,7 +7,15 @@
       "DB_USER": "patanaadmin",
       "DB_PASSWORD": "Automating-colla!",
       "DB_SERVER": "patana-sqlserver.database.windows.net",
-      "DB_NAME": "patana-dev"
+      "DB_NAME": "patana-dev",
+      "SharePointWebsite": "moveoffice.sharepoint.com,2653d2cf-0e14-456a-8b3e-1e87676c63de,8e06bf4b-e86b-4fb6-ad57-3400ecdd2ac0",
+      "SharePointMeetingsDriveId": "b!z9JTJhQOakWLPh6HZ2xj3ku_Bo5r6LZPrVc0AOzdKsC8uMKvzTIFQpAupGlH_x2L",
+      "SharePointMeetingFolderId": "01KRWTNMA3BIQEXKN2J5FIKT5X4SBBF3QQ",
+      "AssetsDriveId": "b!z9JTJhQOakWLPh6HZ2xj3ku_Bo5r6LZPrVc0AOzdKsDKnBsf6CqERYiFJpHEZjuf",
+      "PROTOCOL_TEMPLATE_FILE_ID_DE": "01KRWTNMEAXRNAIPVNQBHKT4GHLD73VU3O",
+      "AGENDA_PDF_TEMPLATE_FILE_ID_DE": "01KRWTNMAEOGNOKAPVEZGY3X7A4KMK5BFG",
+      "PROTOCOL_TEMPLATE_FILE_ID_EN": "01KRWTNMAPBSHZTWR4LJG2JH3HQP4VJWOK",
+      "AGENDA_PDF_TEMPLATE_FILE_ID_EN": "01KRWTNMEEJDNN26T2HJELMBG7ZM7TN7N6"
     },
     "Host": {
         "CORS": "*"

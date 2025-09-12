@@ -71,9 +71,14 @@ export async function callBackend(
     if (!teamsUserCredential) {
       throw new Error("TeamsFx SDK is not initialized.");
     }
+  
 
     // const cred = teamsfx.getCredential();
-    const token = await teamsUserCredential.getToken(""); // Get SSO token for the user
+    const token = await teamsUserCredential.getToken([
+      "https://graph.microsoft.com/Files.ReadWrite.All",
+      "https://graph.microsoft.com/Sites.ReadWrite.All"
+    ]);
+    console.log("Access token being sent:", token?.token);
     const apiEndpoint = config.apiEndpoint; // ✅ comes from import.meta.env
     const response = await axios.default.request({
       url: apiEndpoint + "/api/" + functionName + query,
@@ -89,11 +94,13 @@ export async function callBackend(
   }
 }
 
+
 export type User = {
   displayName: string;
   emailAddress: string;
   avatarUrl: string;
 };
+
 
 export const localizedCalendarStrings: CalendarStrings = {
   ...defaultDatePickerStrings,

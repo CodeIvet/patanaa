@@ -16,19 +16,19 @@ export async function getBoardMeetings(
   context.log("Processing getBoardMeetings function.");
   const logger = new Logger(context);
 
-  // Prepare access token.
-  // const accessToken = request.headers
-  //   .get("Authorization")
-  //   ?.replace("Bearer ", "")
-  //   .trim();
-  // if (!accessToken) {
-  //   return {
-  //     status: 400,
-  //     body: JSON.stringify({
-  //       error: "No access token was found in request header.",
-  //     }),
-  //   };
-  // }
+  //Prepare access token.
+   const accessToken = request.headers
+    .get("Authorization")
+    ?.replace("Bearer ", "")
+    .trim();
+  if (!accessToken) {
+    return {
+      status: 400,
+      body: JSON.stringify({
+        error: "No access token was found in request header.",
+      }),
+    };
+  }
 
   try {
     // Define your SQL query and parameters

@@ -1,10 +1,10 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import DatabaseHelper from "../DatabaseHelper";
-// import { getTelemetryClient } from "../appInsights";
-// import { Logger } from "../logger";
-// import { Client } from "@microsoft/microsoft-graph-client";
-// import { createGraphClient, getSafeString } from "../helper";
-// import config from "../config";
+import { getTelemetryClient } from "../appInsights";
+import { Logger } from "../logger";
+import { Client } from "@microsoft/microsoft-graph-client";
+import { createGraphClient, getSafeString } from "../helper";
+import config from "../config";
 
 export async function deleteBoardMeeting(
   request: HttpRequest,

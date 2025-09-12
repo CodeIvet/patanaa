@@ -50,7 +50,7 @@ export async function updateAgenda(
     const agendaItems: AgendaItem[] = requestBody.agendaItems || [];
     const unassignedAgendaItems: AgendaItem[] = requestBody.unassignedAgendaItems || [];
     const boardMeetingId: number = requestBody.boardMeetingId;
-    const mailbox: string = config.eventMailbox;
+    //const mailbox: string = config.eventMailbox;
     const graphClient: Client = createGraphClient("App");
 
     // A Issue database inserts / updates for current Agenda Items
@@ -137,8 +137,8 @@ export async function updateAgenda(
       if (item.eventId) {
         try {
           await graphClient
-            .api(`/users/${mailbox}/calendar/events/${item.eventId}/cancel`)
-            .post({});
+            //.api(`/users/${mailbox}/calendar/events/${item.eventId}/cancel`)
+            //.post({});
         } catch (err) {
           console.log(err);
         }
@@ -173,29 +173,29 @@ export async function updateAgenda(
     }
 
     // C. Ensure file structure
-    // try {
-    //   const fileResult = await ensureFileStructure(boardMeetingId);
-    //   // D. Update AgendaItems with FileLocationId
-    //   if (fileResult.agendaItems && fileResult.agendaItems.length > 0) {
-    //     for (const item of fileResult.agendaItems) {
-    //       const updateQuery = `
-    //         UPDATE AgendaItems
-    //         SET FileLocationId = @fileLocationId
-    //         WHERE Id = @id;
-    //       `;
-    //       const params = {
-    //         id: item.id,
-    //         fileLocationId: item.fileLocationId,
-    //       };
+    try {
+      const fileResult = await ensureFileStructure(boardMeetingId);
+      // D. Update AgendaItems with FileLocationId
+      if (fileResult.agendaItems && fileResult.agendaItems.length > 0) {
+        for (const item of fileResult.agendaItems) {
+          const updateQuery = `
+            UPDATE AgendaItems
+            SET FileLocationId = @fileLocationId
+            WHERE Id = @id;
+          `;
+          const params = {
+            id: item.id,
+            fileLocationId: item.fileLocationId,
+          };
 
-    //       await DatabaseHelper.executeQuery(updateQuery, params);
-    //     }
-    //   }
-    // } catch (error) {
-    //   statusMessage = "Error ensuring file structure.";
-    //   console.error(error);
-    //   throw error;
-    // }
+          await DatabaseHelper.executeQuery(updateQuery, params);
+        }
+      }
+    } catch (error) {
+      statusMessage = "Error ensuring file structure.";
+      console.error(error);
+      throw error;
+    }
 
     // Return the data in the HTTP response
     return {

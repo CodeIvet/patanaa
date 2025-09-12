@@ -12,7 +12,6 @@ import config from "./config";
 import DatabaseHelper from "./DatabaseHelper";
 import { format } from "path";
 
-
 export function createGraphClient(type: "App" | "User", accessToken?: string): Client {
   const credential = createTeamsFxCredential(type, accessToken);
   const authProvider = new TokenCredentialAuthenticationProvider(credential, {
@@ -93,21 +92,15 @@ export async function createLinkFile(
   }
 }
 
-//rewritten to handle stringdates as well
-export function formatDateForFolder(dateOrString: DateTime | string | null, includeTime = false) {
-  if (!dateOrString) return "unknown-date"; // fallback
+function formatDateForFolder(date: DateTime, includeTime: boolean = false) {
+  const datePart = date.toFormat("yyyy-MM-dd"); // Formats as YYYY-MM-DD
 
-  const dt = typeof dateOrString === "string"
-    ? DateTime.fromISO(dateOrString, { setZone: true })
-    : dateOrString;
-
-  if (!dt.isValid) {
-    console.warn("Invalid date passed to formatDateForFolder:", dateOrString);
-    return "invalid-date";
+  if (includeTime) {
+    const timePart = date.toFormat("HHmm"); // Formats as HHmm (24-hour format, no colon)
+    return `${datePart}_${timePart}`;
+  } else {
+    return datePart;
   }
-
-  const datePart = dt.toFormat("yyyy-MM-dd");
-  return includeTime ? `${datePart}_${dt.toFormat("HHmm")}` : datePart;
 }
 
 export const calculateTimestamps = (
@@ -154,11 +147,9 @@ export async function ensureFileStructure(boardMeetingId: number) {
       getMeetingParams
     );
 
-    const boardMeeting = rawBoardMeetingArray?.[0];
-if (!boardMeeting) {
-  throw new Error("No board meeting found");
-}
-
+    const boardMeeting: BoardMeeting | null = rawBoardMeetingArray
+      ? parseDbRecordToBoardMeeting(rawBoardMeetingArray[0])
+      : null;
 
     // 0b. Get agenda items for board meeting
     const getAgendaItemsQuery =
@@ -169,7 +160,7 @@ if (!boardMeeting) {
       getAgendaItemsParams
     );
 
-    const agendaItems: AgendaItem[] = rawAgendaItems
+    const agendaItems: AgendaItem[] = rawAgendaItems && boardMeeting
       ? calculateTimestamps(
           boardMeeting.startTime ?? DateTime.now(),
           convertPascalToCamel(rawAgendaItems) as AgendaItem[]
@@ -196,9 +187,9 @@ if (!boardMeeting) {
     try {
       // 1. Ensure meeting folder
       const meetingFolderName =
-        formatDateForFolder(boardMeeting.startTime, false) +
+        formatDateForFolder(boardMeeting?.startTime ?? DateTime.now(), false) +
         " - " +
-        getSafeString(boardMeeting.title);
+        getSafeString(boardMeeting?.title ?? "Unknown Meeting");
       if (!boardMeeting?.fileLocationId) {
         // create as new meeting folder
         let url = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${config.sharePointMeetingFolderId}/children`;
@@ -213,7 +204,9 @@ if (!boardMeeting) {
           folder: {},
           "@microsoft.graph.conflictBehavior": "rename",
         });
-        boardMeeting.fileLocationId = meetingFolder.id;
+        if (boardMeeting) {
+          boardMeeting.fileLocationId = meetingFolder.id;
+        }
         console.log("Successfully created meeting folder:", meetingFolderName);
       } else {
         // update existing meeting folder
@@ -244,6 +237,9 @@ if (!boardMeeting) {
           getSafeString(item.title);
         if (!item?.fileLocationId) {
           // create as new agendaitem folder
+          if (!boardMeeting) {
+            throw new Error("boardMeeting is null. Cannot create agenda item folder.");
+          }
           let url = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${boardMeeting.fileLocationId}/children`;
           console.log(
             "Creating new agenda item folder with url:",
@@ -270,7 +266,7 @@ if (!boardMeeting) {
           );
           await graphClient.api(url).patch({
             name: folderName,
-            parentReference: { id: boardMeeting.fileLocationId },
+            parentReference: { id: boardMeeting?.fileLocationId ?? undefined },
             "@microsoft.graph.conflictBehavior": "rename",
           });
           console.log("Successfully updated agenda item folder:", folderName);
@@ -317,7 +313,7 @@ if (!boardMeeting) {
 
     // Return JSON object with fileLocationId of meeting and agenda items
     return {
-      boardMeetingFileLocationId: boardMeeting.fileLocationId,
+      boardMeetingFileLocationId: boardMeeting ? boardMeeting.fileLocationId : undefined,
       agendaItems: agendaItems.map((item) => ({
         id: item.id,
         title: item.title,
@@ -418,7 +414,7 @@ function createTeamsFxCredential(
 
   if (type === "User") {
     if (!accessToken) {
-      throw new Error("Access token is required for User credential type.");
+      throw new Error("Access token is required for User credential.");
     }
     return new OnBehalfOfUserCredential(
       accessToken,
@@ -561,7 +557,7 @@ export async function createJsonForAgendaTemplate(
     isDecision: item.needsDecision,
     hasAdditionalParticipants: !!item.additionalParticipants, // True if additionalParticipants is not empty
     durationInMinutes: item.durationInMinutes,
-    startTime: item.startTime?.toFormat("HH:mm") ?? "",
+    startTime: item.startTime ? item.startTime.toFormat("HH:mm") : "",
     includeRemarks: includeRemarks,
     ...(item.remarks ? { remarks: item.remarks } : {}), // Conditionally add remarks
   }));
@@ -719,7 +715,11 @@ export function toBerlinTimeISOString(date: DateTime): string {
   const berlinTime = date.setZone("Europe/Berlin");
 
   // Format it as an ISO 8601 string
-  return berlinTime.toISO({ suppressMilliseconds: true }) ?? ""; // "2025-01-28T07:00:00+01:00"
+  const isoString = berlinTime.toISO({ suppressMilliseconds: true });
+  if (!isoString) {
+    throw new Error("Failed to convert DateTime to ISO string.");
+  }
+  return isoString; // "2025-01-28T07:00:00+01:00"
 }
 
 export async function getMailBody(eventId: string, graphClient: Client): Promise<string> {

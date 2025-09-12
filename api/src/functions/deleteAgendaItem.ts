@@ -54,19 +54,19 @@ export async function deleteAgendaItem(
     const agendaItemId = requestBody.itemId;
     const agendaItemEventId = requestBody.eventId;
     const agendaItemFileLocationId = requestBody.fileLocationId;
-    const mailbox: string = config.eventMailbox;
+    //const mailbox: string = config.eventMailbox; // implement when mailbox is implemented
     const params = { Id: agendaItemId };
     const graphClient: Client = createGraphClient("App");
 
     // 1. Cancel agendaItem event
     if (agendaItemEventId) {
-      try {
-        await graphClient
-          .api(`/users/${mailbox}/calendar/events/${agendaItemEventId}/cancel`)
-          .post({});
-      } catch (err) {
-        console.log(err);
-      }
+      //try {
+        //await graphClient
+          //.api(`/users/${mailbox}/calendar/events/${agendaItemEventId}/cancel`)
+          //.post({});
+      //} catch (err) {
+        //console.log(err);
+      //}
     }
 
     // 2. Delete file structure of agenda item

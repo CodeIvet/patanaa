@@ -22,6 +22,7 @@ export async function getAgendaItems(
     };
   }
 
+
   // Initialize response.
   const meetingId = request.query.get("boardmeeting");
 

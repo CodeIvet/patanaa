@@ -17,19 +17,26 @@ clientSecret: process.env.M365_CLIENT_SECRET!,
 dbUser: process.env.DB_USER!, 
 dbPassword: process.env.DB_PASSWORD!, 
 dbServer: process.env.DB_SERVER!, 
-dbName: process.env.DB_NAME!, 
+dbName: process.env.DB_NAME!,
+
+
 
  
  
 
 // Add stubs for now: 
 
-sharePointWebsite: process.env.SP_WEBSITE! || "dummy", 
-sharePointMeetingsDriveId: process.env.SP_MEETINGS_DRIVE_ID! || "dummy", 
-sharePointMeetingFolderId: process.env.SP_MEETING_FOLDER_ID! || "dummy", 
-sharePointUnassignedTopsFolderId: process.env.SP_UNASSIGNED_FOLDER_ID! || "dummy", 
-eventMailbox: process.env.EVENT_MAILBOX! || "dummy@domain.com", 
-applicationInsightsConnectionString: process.env.APPLICATION_INSIGHTS_CONNECTION_STRING || "",
+  sharePointWebsite: process.env.SharePointWebsite ?? "",
+  sharePointMeetingsDriveId: process.env.SharePointMeetingsDriveId ?? "",
+  sharePointMeetingFolderId: process.env.SharePointMeetingFolderId ?? "",
+  sharePointUnassignedTopsFolderId: process.env.SharePointUnassignedTopsFolderId ?? "",
+  applicationInsightsConnectionString: process.env.APPLICATIONINSIGHTS_CONNECTION_STRING ?? "",
+  protocolTemplateFileIdDe: process.env.PROTOCOL_TEMPLATE_FILE_ID_DE ?? "",
+  agendaPdfTemplateFileIdDe: process.env.AGENDA_PDF_TEMPLATE_FILE_ID_DE ?? "",
+  protocolTemplateFileIdEn: process.env.PROTOCOL_TEMPLATE_FILE_ID_EN ?? "",
+  agendaPdfTemplateFileIdEn: process.env.AGENDA_PDF_TEMPLATE_FILE_ID_EN ?? "",
+  assetsDriveId: process.env.AssetsDriveId ?? "",
+  eventMailbox: process.env.EVENT_MAILBOX ?? "",
 
 }; 
 

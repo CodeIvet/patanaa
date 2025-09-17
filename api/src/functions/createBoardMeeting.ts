@@ -66,7 +66,23 @@ export async function createBoardMeeting(
     };
     const [newMeeting] = await DatabaseHelper.executeQuery(insertQuery, params);
 
-    // 2.Insert Sharepoint Filestructure
+    // 2. Create folder structure
+    const fileResult = await ensureFileStructure(newMeeting.ID);
+    context.log("Saved fileLocationId to BoardMeeting:", fileResult.boardMeetingFileLocationId, "for meeting id:", newMeeting.ID);
+
+    // 3. Update the meeting with the file location
+    const updateQuery = `
+      UPDATE [BoardMeetings]
+      SET [FileLocationId] = @fileLocationId
+      WHERE [ID] = @meetingId;
+    `;
+    const updateParams = {
+      fileLocationId: fileResult.boardMeetingFileLocationId,
+      meetingId: newMeeting.ID,
+    };
+
+    const updatedMeeting = await DatabaseHelper.executeQuery(updateQuery, updateParams);
+
 
     // Return the data in the HTTP response
     return {

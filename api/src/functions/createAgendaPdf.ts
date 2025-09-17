@@ -11,7 +11,6 @@ import {
   createJsonForAgendaTemplate,
   parseDbRecordToBoardMeeting,
   convertCamelToPascal,
-  ensureFileStructure,
 } from "../helper";
 import { Client } from "@microsoft/microsoft-graph-client";
 import config from "../config";
@@ -25,116 +24,148 @@ export async function createAgendaPdf(
 ): Promise<HttpResponseInit> {
   context.log("Processing createAgendaPdf function.");
 
+  // Initialize response.
+  const res: HttpResponseInit = {
+    status: 200,
+  };
+  const body = Object();
+
+  // Put an echo into response body.
+  body.receivedHTTPRequestBody = (await request.text()) || "";
   let requestBody: any;
   try {
-    const rawBody = (await request.text()) || "{}";
-    requestBody = JSON.parse(rawBody);
-  } catch (err) {
-    context.error("Failed to parse request body:", err);
-    return { status: 400, body: "Invalid JSON in request body" };
+    requestBody = body.receivedHTTPRequestBody
+      ? JSON.parse(body.receivedHTTPRequestBody)
+      : {};
+  } catch (parseError) {
+    if (parseError instanceof Error) {
+      context.log(`Error parsing request body: ${parseError.message}`);
+    } else {
+      context.log("Error parsing request body:", parseError);
+    }
+    throw new Error("Invalid JSON in request body");
   }
 
-  // Extract access token
-  const accessTokenHeader = request.headers.get("Authorization");
-  const accessToken = accessTokenHeader?.replace("Bearer ", "").trim();
+  // Prepare access token.
+  const accessToken: string | undefined = request.headers
+    .get("Authorization")
+    ?.replace("Bearer ", "")
+    .trim();
   if (!accessToken) {
     return {
       status: 400,
-      body: JSON.stringify({ error: "No access token found in request header" }),
+      body: JSON.stringify({
+        error: "No access token was found in request header.",
+      }),
     };
   }
 
-  // Create Graph client once with token
-  const graphClient: Client = createGraphClient("App", accessToken);
-
   try {
-    // Parse boardMeeting
     const boardMeeting: BoardMeeting = parseDbRecordToBoardMeeting(
       convertCamelToPascal([requestBody.boardMeeting])[0]
     );
 
-   
-    // Ensure file structure exists
-    context.log("Parsed boardMeeting:", boardMeeting);
-const boardMeetingId = Number(boardMeeting.id);
-if (!boardMeetingId || isNaN(boardMeetingId)) {
-  throw new Error("BoardMeeting id is undefined or not a valid number. Cannot ensure file structure.");
-}
+    const graphClient: Client = createGraphClient("App");
 
-const fileStructure = await ensureFileStructure(boardMeetingId);
-boardMeeting.fileLocationId = fileStructure.boardMeetingFileLocationId;
-
-    // Fetch agenda items
     const getAgendaItemsQuery =
       "SELECT * FROM AgendaItems WHERE BoardMeeting = @Id ORDER BY OrderIndex ASC";
-    const rawAgendaItems = await DatabaseHelper.executeQuery(getAgendaItemsQuery, {
-      Id: boardMeeting.id,
-    });
+    const getAgendaItemsParams = { Id: boardMeeting.id };
+    const rawAgendaItems = await DatabaseHelper.executeQuery(
+      getAgendaItemsQuery,
+      getAgendaItemsParams
+    );
     const agendaItems: AgendaItem[] = rawAgendaItems
       ? calculateTimestamps(
-          boardMeeting.startTime ?? DateTime.now(),
+          boardMeeting.startTime ? boardMeeting.startTime : DateTime.now(),
           convertPascalToCamel(rawAgendaItems) as AgendaItem[]
         )
       : [];
 
-    // Define template files
     const templateFiles = [
+      // { fileId: config.agendaPdfTemplateFileIdDe, language: "DE", includeRemarks: true },
+      // { fileId: config.agendaPdfTemplateFileIdDe, language: "DE", includeRemarks: false },
       { fileId: config.agendaPdfTemplateFileIdEn, language: "EN", includeRemarks: true },
       { fileId: config.agendaPdfTemplateFileIdEn, language: "EN", includeRemarks: false },
     ];
 
-    for (const templateFile of templateFiles) {
-      // Generate JSON for template
-      const json = await createJsonForAgendaTemplate(
-        boardMeeting,
-        agendaItems,
-        templateFile.language,
-        templateFile.includeRemarks,
-        graphClient
-      );
+    try {
+      for (const templateFile of templateFiles) {
+        const json = await createJsonForAgendaTemplate(
+          boardMeeting,
+          agendaItems,
+          templateFile.language,
+          templateFile.includeRemarks,
+          graphClient
+        );
 
-      // Fetch DOCX template from SharePoint
-      const fileUrl = `/sites/${config.sharePointWebsite}/drives/${config.assetsDriveId}/items/${templateFile.fileId}/content`;
-      const responseStream = await graphClient.api(fileUrl).getStream();
-      const contentBuffer = await streamToBuffer(responseStream);
+        const templateFileId = templateFile.fileId;
 
-      // Render DOCX with Docxtemplater
-      const zip = new PizZip(contentBuffer);
-      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-      doc.render(json);
-      const updatedDocument = doc.getZip().generate({ type: "nodebuffer", compression: "DEFLATE" });
+        // Fetch the input file content from SharePoint
+        const fileUrl = `/sites/${config.sharePointWebsite}/drives/${config.assetsDriveId}/items/${templateFileId}/content`;
+        const responseStream = await graphClient.api(fileUrl).getStream();
+        // Convert the ReadableStream to a Buffer
+        const contentBuffer = await streamToBuffer(responseStream);
+        // Load the DOCX content using PizZip
+        const zip = new PizZip(contentBuffer);
+        const doc = new Docxtemplater(zip, {
+          paragraphLoop: true,
+          linebreaks: true,
+        });
 
-      // Ensure fileLocationId exists
-      if (!boardMeeting.fileLocationId) {
-        throw new Error("BoardMeeting has no fileLocationId. Cannot upload or convert file.");
+        doc.render(json);
+
+        // Generate the updated document as a Node.js Buffer
+        const updatedDocument = doc.getZip().generate({
+          type: "nodebuffer",
+          compression: "DEFLATE",
+        });
+
+          // Log and check fileLocationId before using it
+          context.log("Using fileLocationId:", boardMeeting.fileLocationId);
+          if (!boardMeeting.fileLocationId) {
+            throw new Error("BoardMeeting has no fileLocationId. Cannot upload or convert file.");
+          }
+        // Upload the updated document back to SharePoint
+        const uploadUrl = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${boardMeeting.fileLocationId}:/Agenda_temp_${templateFile.language}.docx:/content`;
+        try {
+          const newDocument = await graphClient.api(uploadUrl).put(updatedDocument);
+          const withRemarksString = templateFile.includeRemarks ? "" : " clean";
+
+          // Convert the document to PDF
+          await convertToPdf(
+            config.sharePointMeetingsDriveId,
+            newDocument.id,
+            config.sharePointMeetingsDriveId,
+            boardMeeting.fileLocationId ?? "",
+            `Agenda-${boardMeeting.title}${withRemarksString}.pdf`,
+            graphClient
+          );
+
+          // Remove the temporary file
+          const deleteUrl = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${newDocument.id}`;
+          await graphClient.api(deleteUrl).delete();
+        } catch (err) {
+          throw err;
+        }
       }
-
-      // Upload DOCX
-      const uploadUrl = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${boardMeeting.fileLocationId}:/Agenda_temp_${templateFile.language}.docx:/content`;
-      const newDocument = await graphClient.api(uploadUrl).put(updatedDocument);
-
-      // Convert to PDF
-      const pdfName = `Agenda-${boardMeeting.title}${templateFile.includeRemarks ? "" : " clean"}.pdf`;
-      await convertToPdf(
-        config.sharePointMeetingsDriveId,
-        newDocument.id,
-        config.sharePointMeetingsDriveId,
-        boardMeeting.fileLocationId,
-        pdfName,
-        graphClient
-      );
-
-      // Delete temporary DOCX
-      const deleteUrl = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${newDocument.id}`;
-      await graphClient.api(deleteUrl).delete();
+    } catch (err) {
+      context.error("Error:", err);
+      return {
+        status: 500,
+        body: err instanceof Error ? err.message : String(err),
+      };
     }
 
-    return { status: 200, jsonBody: JSON.stringify("newMeeting") };
+    // Return the data in the HTTP response
+    return {
+      status: 200,
+      jsonBody: JSON.stringify("newMeeting"),
+    };
   } catch (err) {
-    context.error("Error in createAgendaPdf:", err);
+    context.error("Error:", err);
     return {
       status: 500,
-      body: err instanceof Error ? err.message : String(err),
+      body: "Error in createAgendaPdf",
     };
   }
 }

@@ -325,6 +325,7 @@ export function Dashboard(props: { showFunction?: boolean; environment?: string 
         </DataGridHeaderCell>
       ),
       renderCell: (item) => {
+        console.log("fileLocationId for row", item.id, ":", item.fileLocationId);
         return (
           <DataGridCell
             className="cell"
@@ -368,9 +369,10 @@ export function Dashboard(props: { showFunction?: boolean; environment?: string 
                 );
 
                 setIsLoading(false);
+                console.log("SharePoint folderLink:", folderLink); //debug log 
                 window.open(folderLink, "_blank");
               }}
-              disabled={item.fileLocationId === null}
+              disabled={!item.fileLocationId}
             />
             <IcInvites
               onClick={() => {

@@ -275,6 +275,8 @@ export function Invite(props: {
     invite: InviteItem,
     omitProgressInfo: boolean = false
   ): Promise<InviteItem[]> => {
+    console.log("handleCreate called for invite:", invite.id, "type:", invite.type, "status:", invite.status.message);
+ //console log for invite data
     props.setPreventDialogClose(true);
     setError("");
     let updatedInviteData: InviteItem[] = [];
@@ -300,6 +302,7 @@ export function Invite(props: {
 
       // case 1: if Gesamtsitzung and Create/Update Invite
       if (isGesamtsitzung && (isCreateNew || isUpdate)) {
+         console.log("[handleCreate] processing Gesamtsitzung with backend"); // debug log
         const postCalendarBody = {
           ...props.currentMeetingItem,
           isCreateAsNew: isCreateNew,
@@ -405,6 +408,8 @@ export function Invite(props: {
   };
 
   const handleAutomationConfirm = async () => {
+    console.log("handleAutomationConfirm called. Initial inviteData:", inviteData); // log initial invite data
+
     setLoading(true);
     setError("");
     props.setPreventDialogClose(true);
@@ -565,15 +570,18 @@ export function Invite(props: {
                       </TableCell>
                       <TableCell className={styles.tableCell} style={{ flexGrow: 1 }}>
                         <Button
-                          appearance="primary"
-                          onClick={() => handleCreate(invite)}
-                          disabled={
-                            loading ||
-                            !invite.status.isActionEnabled ||
-                            (invite.type === "TOP" && !isOnlineMeetingLinkAvailable)
-                          }
-                        >
-                          {invite.status.actionLabel}
+  appearance="primary"
+  onClick={() => {
+    console.log("Invite button clicked:", invite);
+    handleCreate(invite);
+  }}
+  disabled={
+    loading ||
+    !invite.status.isActionEnabled ||
+    (invite.type === "TOP" && !isOnlineMeetingLinkAvailable)
+  }
+>
+  {invite.status.actionLabel}
                         </Button>
                       </TableCell>
                     </TableRow>

@@ -50,7 +50,7 @@ export async function updateAgenda(
     const agendaItems: AgendaItem[] = requestBody.agendaItems || [];
     const unassignedAgendaItems: AgendaItem[] = requestBody.unassignedAgendaItems || [];
     const boardMeetingId: number = requestBody.boardMeetingId;
-    //const mailbox: string = config.eventMailbox;
+    const mailbox: string = config.eventMailbox;
     const graphClient: Client = createGraphClient("App");
 
     // A Issue database inserts / updates for current Agenda Items
@@ -137,8 +137,8 @@ export async function updateAgenda(
       if (item.eventId) {
         try {
           await graphClient
-            //.api(`/users/${mailbox}/calendar/events/${item.eventId}/cancel`)
-            //.post({});
+            .api(`/users/${mailbox}/calendar/events/${item.eventId}/cancel`)
+            .post({});
         } catch (err) {
           console.log(err);
         }

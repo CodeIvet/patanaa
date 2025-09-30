@@ -10,49 +10,138 @@ export async function deleteBoardMeeting(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  const telemetryClient = getTelemetryClient();
   context.log("Processing deleteBoardMeeting function.");
+  const logger = new Logger(context);
 
-  // Initialize response
+  // Initialize response.
   const res: HttpResponseInit = {
     status: 200,
   };
-  const body: any = {};
+  const body = Object();
 
-  // Parse request body
+  // Put an echo into response body.
+  body.receivedHTTPRequestBody = (await request.text()) || "";
+  let requestBody: any;
   try {
-    body.receivedHTTPRequestBody = (await request.text()) || "";
-    var requestBody = body.receivedHTTPRequestBody
+    requestBody = body.receivedHTTPRequestBody
       ? JSON.parse(body.receivedHTTPRequestBody)
       : {};
-  } catch (parseError: unknown) {
-  const err = parseError as any;
-  context.log(`Error parsing request body: ${err.message}`);
-}
+  } catch (parseError) {
+    if (parseError instanceof Error) {
+      context.log(`Error parsing request body: ${parseError.message}`);
+    } else {
+      context.log("Error parsing request body: Unknown error");
+    }
+    throw new Error("Invalid JSON in request body");
+  }
+
+  // Prepare access token.
+  const accessTokenHeader = request.headers.get("Authorization");
+  const accessToken: string | undefined = accessTokenHeader
+    ?.replace("Bearer ", "")
+    .trim();
+  if (!accessToken) {
+    return {
+      status: 400,
+      body: JSON.stringify({
+        error: "No access token was found in request header.",
+      }),
+    };
+  }
 
   try {
     const boardMeetingId = requestBody.meetingId;
+    const boardMeetingEventId = requestBody.eventId;
+    const boardMeetingFileLocationId = requestBody.fileLocationId;
+    const mailbox: string = config.eventMailbox;
+    const params = { Id: boardMeetingId };
+    const graphClient: Client = createGraphClient("App");
 
-    if (!boardMeetingId) {
-      return { status: 400, body: "Missing meetingId in request body" };
+    // 0. Get agendaItems
+    const getAgendaItemsQuery = `
+      SELECT * FROM AgendaItems 
+      WHERE BoardMeeting = @Id
+      ORDER BY OrderIndex ASC;
+      `;
+
+    // Execute the query using the helper class
+    const agendaItems = await DatabaseHelper.executeQuery(getAgendaItemsQuery, params);
+
+    // 1. Cancel agendaItem events and boardmeeting event
+    // Cancel each agenda item event if eventId is not null, undefined, or empty string
+    for (const item of agendaItems) {
+      if (item.EventId) {
+        try {
+          await graphClient
+            .api(`/users/${mailbox}/calendar/events/${item.EventId}/cancel`)
+            .post({});
+        } catch (err) {
+          console.log(err);
+        }
+      }
     }
 
-    const params = { Id: boardMeetingId };
+    // Cancel boardMeeting event if eventId is not null, undefined, or empty string
+    if (boardMeetingEventId) {
+      try {
+        await graphClient
+          .api(`/users/${mailbox}/calendar/events/${boardMeetingEventId}/cancel`)
+          .post({});
+      } catch (err) {
+        // ok, when ItemNotFound (deleted otherwise by user)
+        if (typeof err === "object" && err !== null && "code" in err && (err as any).code !== "ErrorItemNotFound") {
+          throw err;
+        }
+      }
+    }
 
-    // 1. Delete agenda items for the board meeting
-    const deleteAgendaItemsQuery = "DELETE FROM AgendaItems WHERE BoardMeeting = @Id";
-    await DatabaseHelper.executeQuery(deleteAgendaItemsQuery, params);
+    // 2. Unassign agendaItems from boardMeeting and set EventId to null
+    const unassignQuery =
+      "UPDATE AgendaItems SET EventId = NULL, BoardMeeting = NULL WHERE BoardMeeting = @Id";
+    const unassignResult = await DatabaseHelper.executeQuery(unassignQuery, params);
 
-    // 2. Delete the board meeting
-    const deleteBoardMeetingQuery = "DELETE FROM BoardMeetings WHERE ID = @Id";
-    const deletedMeeting = await DatabaseHelper.executeQuery(deleteBoardMeetingQuery, params);
+    // 3. Move agenda item file structure to topic storage
+    for (const item of agendaItems) {
+      let url = `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${item.FileLocationId}`;
+      await graphClient.api(url).patch({
+        name: getSafeString(item.Title),
+        parentReference: { id: config.sharePointUnassignedTopsFolderId },
+        "@microsoft.graph.conflictBehavior": "rename",
+      });
+    }
 
-    // Return success
+    // 4. Delete file structure of boardMeeting
+    if (boardMeetingFileLocationId) {
+      try {
+        await graphClient
+          .api(
+            `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${boardMeetingFileLocationId}`
+          )
+          .delete();
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    // 5. Delete boardMeeting
+    // Define your SQL query and parameters
+    const query = "DELETE FROM BoardMeetings WHERE ID = @Id";
+
+    // Execute the query using the helper class
+    const boardMeetings = await DatabaseHelper.executeQuery(query, params);
+
+    // Return the data in the HTTP response
     return {
       status: 200,
-      body: JSON.stringify({ message: "Board meeting deleted successfully", deletedMeeting }),
+      jsonBody: JSON.stringify(boardMeetings),
     };
-  } catch (err: any) {
-    context.log("Error deleting board meeting:", err);
+  } catch (err) {
+    logger.logError(
+      err instanceof Error ? err : new Error(typeof err === "string" ? err : JSON.stringify(err)),
+      { additionalInfo: "dummy" }
+    );
+    context.error("Error:", err);
     return {
       status: 500,
       body: "Internal server error",

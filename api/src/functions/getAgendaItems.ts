@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import DatabaseHelper from "../DatabaseHelper";
 import { AgendaItem } from "../helper";
 
+
 export async function getAgendaItems(
   request: HttpRequest,
   context: InvocationContext

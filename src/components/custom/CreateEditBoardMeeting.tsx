@@ -168,10 +168,13 @@ export function CreateEditBoardMeeting(props: {
         ]);
 
         const groupsData = JSON.parse(groupsResponse);
+        console.log("groupsData:", groupsData); // log parsed participant groups
         const roomsData = roomsResponse.split(";");
+        console.log("roomsData array:", roomsData); // log roomdata array
 
         setDefaultParticipantGroups(groupsData.groups);
         setDefaultRooms(roomsData);
+        console.log("defaultRooms state after set:", roomsData); // log state after setting
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -531,7 +534,7 @@ export function CreateEditBoardMeeting(props: {
                     className={styles.dropdown}
                     disabled={loading}
                     placeholder="Raum hinzufügen"
-                    selectedOptions={[]}
+                    selectedOptions={selectedRoom ? [selectedRoom] : []}
                     onOptionSelect={(_, item) => {
                       if (item.optionValue) {
                         setSelectedRoom(item.optionValue);

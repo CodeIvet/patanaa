@@ -1,5 +1,6 @@
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+//import dotenv from "dotenv";
+//dotenv.config({ path: ".env.local" });
+console.log("EVENT_MAILBOX at startup:", process.env.EVENT_MAILBOX);
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -19,13 +20,7 @@ dbPassword: process.env.DB_PASSWORD!,
 dbServer: process.env.DB_SERVER!, 
 dbName: process.env.DB_NAME!,
 
-
-
- 
- 
-
 // Add stubs for now: 
-
   sharePointWebsite: process.env.SharePointWebsite ?? "",
   sharePointMeetingsDriveId: process.env.SharePointMeetingsDriveId ?? "",
   sharePointMeetingFolderId: process.env.SharePointMeetingFolderId ?? "",
@@ -36,7 +31,10 @@ dbName: process.env.DB_NAME!,
   protocolTemplateFileIdEn: process.env.PROTOCOL_TEMPLATE_FILE_ID_EN ?? "",
   agendaPdfTemplateFileIdEn: process.env.AGENDA_PDF_TEMPLATE_FILE_ID_EN ?? "",
   assetsDriveId: process.env.AssetsDriveId ?? "",
-  eventMailbox: process.env.EVENT_MAILBOX ?? "",
+  eventMailbox: process.env.EVENT_MAILBOX!,
+  onlineMeetingHosts: process.env.ONLINE_MEETING_HOSTS ?? "",
+  defaultParticipantGroups: process.env.DEFAULT_PARTICIPANT_GROUPS ?? "",
+  defaultRooms: process.env.DEFAULT_ROOMS ?? "",
 
 }; 
 

@@ -1,6 +1,6 @@
 import { Card, CardHeader } from "@fluentui/react-components";
 import { Link, Text } from "@fluentui/react-components";
-//import logo from "./custom/lib/logo_big.png"; // Import your logo
+import logo from "./custom/lib/patanalogo1.png"; // Import logo
 
 export default function About() {
   return (
@@ -9,14 +9,14 @@ export default function About() {
         <CardHeader
           image={
             <img
-              //src={logo}
-              alt="Patana Logo"
+              src={logo}
+              alt="Patanaa Logo"
               style={{ width: 64, height: 64, borderRadius: "8px" }}
             />
           }
           header={
             <Text weight="bold" size={600}>
-              ExecuMeet
+              Patanaa
             </Text>
           }
           description="The Teams App for Board Meetings"

@@ -54,19 +54,22 @@ export async function deleteAgendaItem(
     const agendaItemId = requestBody.itemId;
     const agendaItemEventId = requestBody.eventId;
     const agendaItemFileLocationId = requestBody.fileLocationId;
-    //const mailbox: string = config.eventMailbox; // implement when mailbox is implemented
+    const mailbox: string = config.eventMailbox; // implement when mailbox is implemented
     const params = { Id: agendaItemId };
     const graphClient: Client = createGraphClient("App");
 
     // 1. Cancel agendaItem event
     if (agendaItemEventId) {
-      //try {
-        //await graphClient
-          //.api(`/users/${mailbox}/calendar/events/${agendaItemEventId}/cancel`)
-          //.post({});
-      //} catch (err) {
-        //console.log(err);
-      //}
+      try {
+        await graphClient
+          .api(`/users/${mailbox}/calendar/events/${agendaItemEventId}/cancel`)
+          .post({});
+        context.log(`Successfully cancelled event: ${agendaItemEventId}`);
+      } catch (err) {
+        context.error(`Failed to cancel event ${agendaItemEventId}:`, err);
+      }
+    } else {
+      context.log("No agendaItemEventId provided, skipping event cancellation.");
     }
 
     // 2. Delete file structure of agenda item
@@ -77,9 +80,12 @@ export async function deleteAgendaItem(
             `/sites/${config.sharePointWebsite}/drives/${config.sharePointMeetingsDriveId}/items/${agendaItemFileLocationId}`
           )
           .delete();
+        context.log(`Successfully deleted folder: ${agendaItemFileLocationId}`);
       } catch (err) {
-        console.log(err);
+        context.error(`Failed to delete folder ${agendaItemFileLocationId}:`, err);
       }
+    } else {
+      context.log("No agendaItemFileLocationId provided, skipping folder deletion.");
     }
 
     // 3. Delete Agenda Item from database
